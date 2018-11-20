@@ -8,7 +8,8 @@ from glob import glob
 import os
 import sys
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 # noinspection PyProtectedMember
@@ -17,25 +18,22 @@ from config import HEROKU_ERR_EVERY_TIME, XFORM_TEST_EXECUTABLE, LOGGING_ON, \
     TEMP_DIR, IS_WINDOWS
 
 app = Flask(__name__)
+CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 path_char = '\\' if IS_WINDOWS else '/'
 
 
 @app.route('/')
-def index():
-    """Index"""
-    return render_template('index.html')
-
-
-@app.route('/about')
-def about():
-    """About"""
-    return render_template('about.html')
-
-
+@app.route('/<string:filename>')
 @app.route('/xform_test/<string:filename>')
-def xform_test(filename):
+def xform_test(filename=None):
     """Runs XFormTest CLI."""
+    if not filename or filename == 'favicon.ico':
+        # Not sure why, but when running in dev env in Pycharm, loading '/'
+        # with no query args renderrs param as 'favicon.ico'. -jef 2018/11/20
+        return jsonify({
+            'error': 'No file was passed.'
+        })
     try:
         if filename.endswith('.xls') or filename.endswith('.xlsx'):
             xml = filename.replace('.xlsx', '.xml').replace('.xls', '.xml')
@@ -45,7 +43,19 @@ def xform_test(filename):
             stderr = '' if stderr == HEROKU_ERR_EVERY_TIME else stderr
             # err when converting to xml
             if stderr:
-                return _return_failing_result(stderr, stdout)
+                presentable_err = stderr
+                if 'Traceback' in stderr:
+                    presentable_err_lines = []
+                    lines = stderr.split('\n')
+                    for i in range(len(lines)):
+                        line = lines[len(lines) - i - 1].strip()
+                        if not line.startswith('File'):
+                            presentable_err_lines = [line] + \
+                                                    presentable_err_lines
+                        else:
+                            break
+                    presentable_err = '\n'.join(presentable_err_lines)
+                return _return_failing_result(presentable_err, stdout)
         else:
             xml = filename
 
@@ -64,21 +74,31 @@ def xform_test(filename):
         result = json.loads(stdout)
         success = result['successMsg']
         warnings = result['warningsMsg']
-        return render_template('index.html', success=success,
-                               warnings=warnings,
-                               error=stderr if LOGGING_ON else '')
+
+        return jsonify({
+            'success': success,
+            'warnings': warnings,
+            'error': stderr if LOGGING_ON else ''
+        })
     # unexpected err
     except Exception as err:
         print(str(err), file=sys.stderr)
-        return render_template('index.html', error=str(err))
+        return jsonify({'error': str(err)})
 
 
 @app.route('/upload', methods=['POST'])
 def upload():
     """Upload"""
     try:
-        file = request.files['file']
-        filename = secure_filename(file.filename)
+        files = request.files
+        if len(files) > 1:
+            return jsonify({
+                'error': 'Only one file can be uploaded at a time.'
+            })
+        original_filename = [k for k, v in files.items()][0]
+        file = files[original_filename]
+        filename = secure_filename(original_filename)
+
         upload_folder = basedir + path_char + TEMP_DIR
         file_path = os.path.join(upload_folder, filename)
 
@@ -91,11 +111,12 @@ def upload():
             os.mkdir(upload_folder)
             file.save(file_path)
 
-        return jsonify({'success': True, 'filename': filename})
+        return xform_test(filename=filename)
     except Exception as err:
-        msg = 'An unexpected error occurred:\n\n' + str(err)
-        return jsonify({'success': False, 'message': msg})
+        return jsonify({
+            'error': 'An unexpected error occurred:\n\n' + str(err)
+        })
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8080)
