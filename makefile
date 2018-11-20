@@ -9,7 +9,7 @@ staging production-push staging-push push-production push-staging \
 circleci-validate-config  gunicorn-local serve-local production-push-ci \
 stagingpush-ci logs-heroku logs-staging-heroku validations validate \
 connect-staging connect-prod connect connect-vim connect-vim-staging \
-heroku-setup
+#heroku-setup heroku-setup-staging heroku-setup-production
 
 # DEVELOPMENT
 ## Linting
@@ -72,7 +72,7 @@ GUNICORN=gunicorn app:app
 ## Local
 serve-local-flask:
 #	python xform_test_web/xform_test_web.py
-	open http://localhost:5000; \
+	open http://localhost:8080; \
 	python app.py
 serve-heroku-local:
 	heroku local
@@ -86,15 +86,15 @@ gunicorn-local: serve-dev-network-accessible
 
 ## Heroku
 ### Setup
-heroku-setup-staging:
-	heroku buildpacks:add --index 1 heroku/jvm --app xform-test-staging; \
-	heroku buildpacks:add --index 2 heroku/python --app xform-test-staging
-heroku-setup-production:
-	heroku buildpacks:add --index 1 heroku/jvm --app xform-test; \
-	heroku buildpacks:add --index 2 heroku/python --app xform-test
-heroku-setup:
-	make heroku-setup-staging; \
-	make heroku-setup-production
+#heroku-setup-staging:
+#	heroku buildpacks:add --index 1 heroku/jvm --app xform-test-staging; \
+#	heroku buildpacks:add --index 2 heroku/python --app xform-test-staging
+#heroku-setup-production:
+#	heroku buildpacks:add --index 1 heroku/jvm --app xform-test; \
+#	heroku buildpacks:add --index 2 heroku/python --app xform-test
+#heroku-setup:
+#	make heroku-setup-staging; \
+#	make heroku-setup-production
 
 ### Pushing & Serving
 push-production-heroku:
@@ -107,8 +107,8 @@ push-production-heroku:
 	git checkout -b production; \
 	git push -u trunk production --force; \
 	git checkout master; \
-	open https://dashboard.heroku.com/apps/xform-test/activity; \
-	open https://circleci.com/gh/PMA-2020/workflows/xform-test-web
+	open https://dashboard.heroku.com/apps/xform-test-api/activity; \
+	open https://circleci.com/gh/PMA-2020/workflows/xform-test-api
 push-staging-heroku:
 	git status; \
 	printf "\nGit status should have reported 'nothing to commit, working tree\
@@ -119,8 +119,8 @@ push-staging-heroku:
 	git checkout -b staging; \
 	git push -u trunk staging --force; \
 	git checkout develop; \
-	open https://dashboard.heroku.com/apps/xform-test-staging/activity; \
-	open https://circleci.com/gh/PMA-2020/workflows/xform-test-web
+	open https://dashboard.heroku.com/apps/xform-test-api-staging/activity; \
+	open https://circleci.com/gh/PMA-2020/workflows/xform-test-api
 serve-production:
 	${GUNICORN}
 serve-staging: serve-production

@@ -3,7 +3,7 @@ import sys
 import shlex
 from subprocess import PIPE, run, Popen
 
-from flask import render_template, redirect
+from flask import redirect, jsonify
 
 from config import HEROKU_ERR_EVERY_TIME, LOGGING_ON, IS_WINDOWS
 
@@ -59,5 +59,7 @@ def _return_failing_result(stderr, stdout):
         new_stderr = new_stderr.replace(
             'Exception in thread "main" org.pma2020.xform_test.', '')
 
-    return render_template('index.html', error=new_stderr,
-                           stdout=stdout if LOGGING_ON else '')
+    return jsonify({
+        'error': new_stderr,
+        'stdout': stdout if LOGGING_ON else ''
+    })

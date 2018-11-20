@@ -1,2 +1,2 @@
-# XFormTest-Web
-Web application for XForm Test.
+# XFormTest-API
+Web API for XFormTest.
