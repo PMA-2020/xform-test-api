@@ -9,7 +9,7 @@ staging production-push staging-push push-production push-staging \
 circleci-validate-config  gunicorn-local serve-local production-push-ci \
 stagingpush-ci logs-heroku logs-staging-heroku validations validate \
 connect-staging connect-prod connect connect-vim connect-vim-staging \
-#heroku-setup heroku-setup-staging heroku-setup-production
+log log-staging heroku-setup heroku-setup-staging heroku-setup-production
 
 # DEVELOPMENT
 ## Linting
@@ -86,15 +86,15 @@ gunicorn-local: serve-dev-network-accessible
 
 ## Heroku
 ### Setup
-#heroku-setup-staging:
-#	heroku buildpacks:add --index 1 heroku/jvm --app xform-test-staging; \
-#	heroku buildpacks:add --index 2 heroku/python --app xform-test-staging
-#heroku-setup-production:
-#	heroku buildpacks:add --index 1 heroku/jvm --app xform-test; \
-#	heroku buildpacks:add --index 2 heroku/python --app xform-test
-#heroku-setup:
-#	make heroku-setup-staging; \
-#	make heroku-setup-production
+heroku-setup-staging:
+	heroku buildpacks:add --index 1 heroku/jvm --app xform-test-api-staging; \
+	heroku buildpacks:add --index 2 heroku/python --app xform-test-api-staging
+heroku-setup-production:
+	heroku buildpacks:add --index 1 heroku/jvm --app xform-test-api; \
+	heroku buildpacks:add --index 2 heroku/python --app xform-test-api
+heroku-setup:
+	make heroku-setup-staging; \
+	make heroku-setup-production
 
 ### Pushing & Serving
 push-production-heroku:
@@ -141,9 +141,9 @@ install-vim-on-server:
 
 ### Logs
 logs-heroku:
-	heroku logs --app xform-test --tail
+	heroku logs --app xform-test-api --tail
 logs-staging-heroku:
-	heroku logs --app xform-test-staging --tail
+	heroku logs --app xform-test-api-staging --tail
 
 ## Aliases and defaults
 production-push-heroku: push-production-heroku
@@ -168,3 +168,5 @@ logs: logs-heroku
 logs-staging: logs-staging-heroku
 validations: circleci-validate-config
 validate: validations
+log: logs
+log-staging: logs-staging
